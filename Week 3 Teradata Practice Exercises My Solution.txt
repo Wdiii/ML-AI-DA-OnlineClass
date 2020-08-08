@@ -58,3 +58,32 @@ GROUP BY trnsact.saledate
 ORDER BY AmountReturn DESC;
 
 ORDER BY QuantityReturn DESC;
+
+6
+SELECT MAX(sprice) AS MaxPrice, MIN(sprice) AS MinPrice
+FROM trnsact;
+
+7
+SELECT deptinfo.deptdesc, COUNT(DISTINCT skuinfo.brand) AS NumBrand
+FROM deptinfo, skuinfo
+WHERE deptinfo.dept=skuinfo.dept
+GROUP BY deptinfo.deptdesc
+HAVING NumBrand>100;
+
+8
+SELECT deptinfo.deptdesc, skstinfo.sku
+FROM (skstinfo LEFT JOIN skuinfo ON skuinfo.sku=skstinfo.sku) LEFT JOIN deptinfo ON deptinfo.dept=skuinfo.dept;
+
+9
+SELECT de.dept, de.deptdesc, sku.brand, sku.style, sku.color, SUM(tr.amt) AS AmountReturn
+FROM (deptinfo de JOIN skuinfo sku ON de.dept=sku.dept) JOIN trnsact tr ON sku.sku=tr.sku 
+WHERE tr.stype='R'
+GROUP BY de.dept, de.deptdesc, sku.brand, sku.style, sku.color
+ORDER BY AmountReturn DESC;
+
+10
+SELECT st.store, st.state, st.zip, SUM(tr.amt) AS Sales
+FROM store_msa st JOIN trnsact tr ON st.store=tr.store 
+WHERE tr.stype='P'
+GROUP BY st.store, st.state, st.zip
+ORDER BY Sales DESC;
