@@ -1,0 +1,60 @@
+Week 3 
+1
+760212 skstinfo contains most unique skus 1564178
+714499 trnsact
+542513 skstinfo
+
+SELECT COUNT(DISTINCT skuinfo.sku)
+FROM skuinfo, skstinfo 
+WHERE skuinfo.sku=skstinfo.sku;   
+Week 3 Teradata Practice Exercises My Solution
+
+SELECT COUNT(DISTINCT skuinfo.sku)
+FROM skuinfo, trnsact 714499
+WHERE skuinfo.sku=trnsact.sku;   
+
+SELECT COUNT(DISTINCT skstinfo.sku)
+FROM skstinfo, trnsact
+WHERE skstinfo.sku=trnsact.sku;   
+
+526366
+SELECT count(DISTINCT skstinfo.sku) AS Instances
+FROM skstinfo, trnsact
+WHERE skstinfo.sku=trnsact.sku AND skstinfo.store=trnsact.store;   
+
+2
+332 
+SELECT COUNT(DISTINCT trnsact.store) AS Instances
+FROM store_msa, trnsact
+WHERE store_msa.store=trnsact.store;   
+
+SELECT DISTINCT trnsact.store 
+FROM trnsact 
+LEFT JOIN store_msa on store_msa.store=trnsact.store 
+LEFT JOIN skstinfo on trnsact.store=skstinfo.store 
+LEFT JOIN strinfo on trnsact.store=strinfo.store
+
+SELECT COUNT(DISTINCT trnsact.store)
+FROM trnsact LEFT JOIN skstinfo ON trnsact.store = skstinfo.store
+WHERE skstinfo.store IS NULL;
+
+3
+They all have discount, type p
+SELECT *
+FROM trnsact LEFT JOIN skstinfo ON trnsact.sku = skstinfo.sku
+WHERE skstinfo.sku IS NULL;           
+
+4
+SELECT trnsact.register, SUM(trnsact.amt-skstinfo.cost)/COUNT(DISTINCT trnsact.saledate) AS AvgProfit
+FROM skstinfo LEFT JOIN trnsact ON skstinfo.sku=trnsact.sku AND skstinfo.store=trnsact.store 
+GROUP BY trnsact.register
+ORDER BY AvgProfit DESC;
+
+5
+SELECT trnsact.saledate, SUM(trnsact.amt) AS AmountReturn, SUM(trnsact.quantity) AS QuantityReturn
+FROM skstinfo LEFT JOIN trnsact ON skstinfo.sku=trnsact.sku AND skstinfo.store=trnsact.store 
+WHERE trnsact.stype='R'
+GROUP BY trnsact.saledate
+ORDER BY AmountReturn DESC;
+
+ORDER BY QuantityReturn DESC;
