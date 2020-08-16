@@ -1,0 +1,21 @@
+Week 5
+
+DATABASE ua_dillards; 
+
+Q1: How many distinct dates are there in the saledate column of the transaction table for each month/year combination in the database?
+
+SELECT EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT EXTRACT(day from saledate))
+FROM trnsact
+GROUP BY mon, yr
+ORDER BY yr, mon;
+
+Q2. Use a CASE statement within an aggregate function to determine which sku had the greatest total sales during the combined summer months of June, July, and August.
+
+SELECT DISTINCT sku,
+SUM(CASE WHEN EXTRACT(month from saledate)=6 AND stype='P' THEN amt END) AS Jun,
+SUM(CASE WHEN EXTRACT(month from saledate)=7 AND stype='P' THEN amt END) AS Jul,
+SUM(CASE WHEN EXTRACT(month from saledate)=8 AND stype='P' THEN amt END) AS Aug,
+(Jun+ Jul+ Aug) AS total
+FROM trnsact
+GROUP BY sku
+ORDER BY total DESC;
