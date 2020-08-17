@@ -19,3 +19,42 @@ SUM(CASE WHEN EXTRACT(month from saledate)=8 AND stype='P' THEN amt END) AS Aug,
 FROM trnsact
 GROUP BY sku
 ORDER BY total DESC;
+
+Q3. How many distinct dates are there in the saledate column of the transaction table for each month/year/store combination in the database?
+
+SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate)
+FROM trnsact
+GROUP BY mon, yr, store
+ORDER BY COUNT(DISTINCT saledate);
+
+Q4. What is the average daily revenue for each store/month/year combination in the database?
+
+SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, SUM(amt)/count(DISTINCT saledate) AS DailyRevenue
+FROM trnsact
+GROUP BY mon, yr, store;
+
+SELECT t.store, t.mon, t.yr, t.days, t.DailyRevenue 
+FROM 
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)/count(DISTINCT saledate) AS DailyRevenue
+FROM trnsact
+GROUP BY mon, yr, store
+HAVING MON<>8 AND YR<>2005) AS t
+WHERE t.days>20
+GROUP BY t.store, t.mon, t.yr, t.days, t.DailyRevenue
+ORDER BY t.days;
+
+Q5. What is the average daily revenue brought in by Dillard’s stores in areas of high, medium, or low levels of high school education?
+
+SELECT (CASE 
+WHEN msa_high>50 AND msa_high<=60 THEN 'low'
+WHEN msa_high>60 AND msa_high<=70 THEN 'med'
+WHEN msa_high>70 THEN 'high' 
+END) AS Education, SUM(t.Revenue)/SUM(t.days) AS DailyRevenue
+FROM store_msa s JOIN  
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)AS Revenue
+FROM trnsact
+GROUP BY mon, yr, store
+HAVING MON<>8 AND YR<>2005 AND days>=20) AS t
+ON t.store=s.store
+GROUP BY Education;
+
