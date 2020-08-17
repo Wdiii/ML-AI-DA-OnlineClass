@@ -35,10 +35,10 @@ GROUP BY mon, yr, store;
 
 SELECT t.store, t.mon, t.yr, t.days, t.DailyRevenue 
 FROM 
-(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)/count(DISTINCT saledate) AS DailyRevenue
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)/count(DISTINCT saledate) AS DailyRevenue, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
 FROM trnsact
-GROUP BY mon, yr, store
-HAVING MON<>8 AND YR<>2005) AS t
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store) AS t
 WHERE t.days>20
 GROUP BY t.store, t.mon, t.yr, t.days, t.DailyRevenue
 ORDER BY t.days;
@@ -51,10 +51,14 @@ WHEN msa_high>60 AND msa_high<=70 THEN 'med'
 WHEN msa_high>70 THEN 'high' 
 END) AS Education, SUM(t.Revenue)/SUM(t.days) AS DailyRevenue
 FROM store_msa s JOIN  
-(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)AS Revenue
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)AS Revenue, (CASE
+WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
 FROM trnsact
+WHERE stype='P' AND Remain='keep'
 GROUP BY mon, yr, store
-HAVING MON<>8 AND YR<>2005 AND days>=20) AS t
+HAVING days>=20) AS t
 ON t.store=s.store
 GROUP BY Education;
+
+
 
