@@ -60,5 +60,108 @@ HAVING days>=20) AS t
 ON t.store=s.store
 GROUP BY Education;
 
+Q6. Compare the average daily revenues of the stores with the highest median msa_income and the lowest median msa_income. In what city and state were these stores, and which store had a higher average daily revenue?
 
+SELECT s.city, s.state, SUM(t.Revenue)/SUM(t.days) AS DailyRevenue
+FROM store_msa s JOIN  
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)AS Revenue, (CASE
+WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store
+HAVING days>=20) AS t
+ON t.store=s.store
+WHERE s.msa_income IN ((SELECT MAX(msa_income) FROM store_msa),(SELECT MIN(msa_income) FROM store_msa))
+GROUP BY s.city, s.state;
+
+Q7. What is the brand of the sku with the greatest standard deviation in sprice? Only examine skus that have been part of over 100 transactions.
+
+SELECT t.sku, u.brand, STDDEV_SAMP(t.sprice) AS StdPrice
+FROM trnsact t
+JOIN skuinfo u on u.sku=t.sku
+WHERE t.stype='P' AND t.sku IN (SELECT sku FROM trnsact GROUP BY sku HAVING COUNT(sku)>100)
+GROUP BY t.sku, u.brand
+ORDER BY StdPrice DESC;
+
+Q8. Examine all the transactions for the sku with the greatest standard deviation in sprice, but only consider skus that are part of more than 100 transactions.
+
+SELECT TOP 1 t.sku, AVG(t.sprice), AVG(t.orgprice)
+FROM trnsact t
+JOIN skuinfo u on u.sku=t.sku
+WHERE t.stype='P' AND t.sku IN (SELECT sku FROM trnsact GROUP BY sku HAVING COUNT(sku)>100)
+GROUP BY t.sku
+ORDER BY STDDEV_SAMP(t.sprice) DESC;
+
+Q9. What was the average daily revenue Dillard’s brought in during each month of the year?
+
+SELECT t.mon, t.yr, SUM(t.Revenue)/SUM(t.days) AS DailyRevenue, DailyRevenue*AVG(t.days) AS MonthlyRevenue
+FROM 
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt)AS Revenue, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store) AS t
+WHERE t.days>20
+GROUP BY t.mon, t.yr
+ORDER BY MonthlyRevenue DESC;
+
+Q10. Which department, in which city and state of what store, had the greatest % increase in average daily sales revenue from November to December?
+
+SELECT s.store, city, state, s.NovR, s.DecR, s.Percentage
+FROM (
+SELECT t.store, SUM(CASE WHEN t.MON=11 THEN t.amt END) AS NovR, SUM(CASE WHEN t.MON=12 THEN t.amt END) AS DecR, COUNT(DISTINCT CASE WHEN t.MON=11 THEN t.saledate END) AS NovD, COUNT(DISTINCT CASE WHEN t.MON=12 THEN t.saledate END) AS DecD, ((DecR/DecD-NovR/NovD)/(NovR/NovD))*100 AS Percentage 
+FROM 
+(SELECT store, amt, saledate, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep') AS t
+GROUP BY t.store
+HAVING DecD>20 AND NovD>20) AS s
+JOIN store_msa m
+ON m.store=s.store
+ORDER BY s.Percentage DESC;
+
+Q11. What is the city and state of the store that had the greatest decrease in average daily revenue from August to September?
+
+Similar to Q11.
+
+Q12. Determine the month of maximum total revenue for each store. Then determine the month of maximum average daily revenue. How do they compare?
+
+SELECT t.store, t.mon, t.yr, (t.revenue/t.days) AS dailyrevenue, Rank() OVER (PARTITION BY t.store ORDER BY dailyrevenue DESC ) AS ranking
+FROM 
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt) AS revenue, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store) AS t
+WHERE t.days>20
+GROUP BY t.store, t.mon, t.yr, dailyrevenue
+ORDER BY t.store, ranking;
+
+-----Monthly Revenue-----
+SELECT sub.mon, COUNT(*) AS topmonth
+FROM(
+SELECT t.store, t.mon, t.yr, t.revenue, Rank() OVER (PARTITION BY t.store ORDER BY revenue DESC ) AS ranking
+FROM 
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt) AS revenue, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store) AS t
+WHERE t.days>20
+GROUP BY t.store, t.mon, t.yr, revenue) AS sub
+WHERE ranking=1
+GROUP BY sub.mon
+ORDER BY topmonth DESC;
+
+-----Daily Revenue-----
+SELECT sub.mon, COUNT(*) AS topmonth
+FROM(
+SELECT t.store, t.mon, t.yr, (t.revenue/t.days) AS dailyrevenue, Rank() OVER (PARTITION BY t.store ORDER BY dailyrevenue DESC ) AS ranking
+FROM 
+(SELECT store, EXTRACT(month from saledate) AS mon, EXTRACT(year from saledate) AS yr, COUNT(DISTINCT saledate) AS days, SUM(amt) AS revenue, (CASE WHEN (MON=8 AND YR=2005) THEN 'del' ELSE 'keep' END) AS Remain
+FROM trnsact
+WHERE stype='P' AND Remain='keep'
+GROUP BY mon, yr, store) AS t
+WHERE t.days>20
+GROUP BY t.store, t.mon, t.yr, dailyrevenue) AS sub
+WHERE ranking=1
+GROUP BY sub.mon
+ORDER BY topmonth DESC;
 
